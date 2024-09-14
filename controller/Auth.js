@@ -28,7 +28,7 @@ class Auth {
             const token = jwt.sign(
                 { id: newUser.id, email: newUser.email, phoneNumber },
                 process.env.JWT_SECRET,
-                { expiresIn: '1h' }
+                { expiresIn: '365d' }
             );
             res.status(201).json({
                 msg: 'User added successfully',
@@ -77,7 +77,7 @@ class Auth {
                     phoneNumber: user.phoneNumber
                 },
                 process.env.JWT_SECRET,
-                { expiresIn: '1h' }
+                { expiresIn: '365d' }
             );
             res.status(200).json({
                 msg: 'Login successful',

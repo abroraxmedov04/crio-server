@@ -3,6 +3,41 @@ import User from '../models/User.js';
 import jwt from 'jsonwebtoken';
 
 class ProfileController {
+    async uploadAvatar(req, res) {
+        try {
+            const token = req.headers.authorization.split(' ')[1];
+            if (!token) {
+                return res.status(401).json({ msg: 'Unauthorized, no token provided' });
+            }
+    
+            const decoded = jwt.verify(token, process.env.JWT_SECRET);
+            const user = await User.findByPk(decoded.id, { include: 'profile' });
+    
+            if (!user) {
+                return res.status(404).json({ msg: 'User not found' });
+            }
+    
+            if (!req.file) {
+                return res.status(400).json({ msg: 'No file uploaded' });
+            }
+    
+            const avatarUrl = `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`;
+    
+            const profileData = { avatar: avatarUrl }; // Use the full URL of the uploaded image
+            if (user.profile) {
+                await user.profile.update(profileData);
+            } else {
+                await Profile.create({ ...profileData, userId: user.id });
+            }
+    
+            res.status(200).json({ msg: 'Avatar uploaded successfully', profile: user.profile });
+        } catch (error) {
+            console.error('Error uploading avatar:', error);
+            res.status(500).json({ msg: 'Error uploading avatar', error: error.message });
+        }
+    }
+
+
     async getProfile(req, res) {
         try {
             const token = req.headers.authorization.split(' ')[1];
@@ -62,7 +97,6 @@ class ProfileController {
                 phoneNumber
             } = req.body;
 
-            // Update profile data
             const profileData = {
                 avatar: avatar || user.profile?.avatar,
                 dateOfBirth: dateOfBirth || user.profile?.dateOfBirth,
@@ -70,14 +104,11 @@ class ProfileController {
             };
 
             if (user.profile) {
-                // Update existing profile
                 await user.profile.update(profileData);
             } else {
-                // Create a new profile if it doesn't exist
                 await Profile.create({ ...profileData, userId: user.id });
             }
 
-            // Update user data
             user.fullName = fullName || user.fullName;
             user.email = email || user.email;
             user.phoneNumber = phoneNumber || user.phoneNumber;

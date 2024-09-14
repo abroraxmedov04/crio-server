@@ -2,8 +2,10 @@ import express from 'express';
 import dontenv from 'dotenv';
 import cors from 'cors';
 import sequelize from './db.js';
+import bodyParser from 'body-parser';
 import Auth from './controller/Auth.js';
 import ProfileController from './controller/ProfileController.js';
+import upload from './upload.js';
 
 dontenv.config();
 
@@ -13,7 +15,10 @@ const app = express();
 
 app.use(cors());
 app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
+app.use(bodyParser.json({ limit: '50mb' }));
+app.use(bodyParser.urlencoded({ limit: '50mb', extended: true }));
+app.use('/uploads', express.static('uploads'));
+
 
 app.get('/', (req, res) => {
     res.json({ msg: `server works fine on port ${PORT}` });
@@ -29,6 +34,10 @@ app.post('/api/users/reset-password', Auth.resetPassword);
 app.get('/api/users/profile-get', ProfileController.getProfile);
 app.post('/api/users/profile-edit', ProfileController.updateProfile);
 
+
+// imgae upload logic 
+app.post("/api/users/upload-image", upload.single('avatar'), ProfileController.uploadAvatar)
+
 const startServer = async () => {
     try {
         await sequelize.authenticate();
@@ -42,5 +51,8 @@ const startServer = async () => {
         console.log(error);
     }
 };
+
+
+
 
 startServer();
